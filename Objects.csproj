@@ -30,6 +30,23 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'ReleaseToNugetLocal|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\ReleaseToNugetLocal\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'ReleaseToNugetOrg|AnyCPU'">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\ReleaseToNugetOrg\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -45,12 +62,24 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Target Name="AfterBuild" Condition="'$(Configuration)' == 'Release'">
+  <!-- RELEASE TO NUGET LOCAL||ORG -->
+  <Target Name="AfterBuild">
+    <Exec Command="if not exist $(ProjectDir)NugetPackage mkdir $(ProjectDir)NugetPackage" />
+    <CallTarget Condition="'$(Configuration)' == 'ReleaseToNugetLocal'" Targets="release_nuget_local" />
+    <CallTarget Condition="'$(Configuration)' == 'ReleaseToNugetOrg'" Targets="release_nuget_org" />
+  </Target>
+  <Target Name="release_nuget_local">
     <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
       <Output TaskParameter="Assemblies" ItemName="AssemblyVersion" />
     </GetAssemblyIdentity>
-    <Exec Command="Nuget.exe pack $(ProjectPath) -OutputDirectory $(SolutionDir)NugetPackage\ -Symbols -Properties Configuration=Release" />
-    <Exec Command="Nuget.exe push $(SolutionDir)NugetPackage\$(TargetName).%(AssemblyVersion.Version).nupkg AEAA3BC3-B024-492F-829D-15940F91D7D4 -s http://nugetserver.avenida.com/" />
-    <Message Text="Published $(ProjectName).%(AssemblyVersion.Version)" Importance="high" />
+    <Exec Command="Tools\Nuget.exe pack $(ProjectPath) -OutputDirectory $(ProjectDir)NugetPackage\ -Symbols -Properties Configuration=ReleaseToNugetLocal" />
+    <Exec Command="Tools\Nuget.exe push $(ProjectDir)NugetPackage\$(TargetName).%(AssemblyVersion.Version).nupkg -s http://nugetserver.avenida.com/" />
+  </Target>
+  <Target Name="release_nuget_org">
+    <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
+      <Output TaskParameter="Assemblies" ItemName="AssemblyVersion" />
+    </GetAssemblyIdentity>
+    <Exec Command="Tools\Nuget.exe pack $(ProjectPath) -OutputDirectory $(ProjectDir)NugetPackage\ -Symbols -Properties Configuration=ReleaseToNugetOrg" />
+    <Exec Command="Tools\Nuget.exe push $(ProjectDir)NugetPackage\$(TargetName).%(AssemblyVersion.Version).nupkg" />
   </Target>
 </Project>
